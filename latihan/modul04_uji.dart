@@ -164,9 +164,7 @@ void main() {
   print('Hal ini membuktikan enkapsulasi: data internal dilindungi,');
   print('perubahan stok hanya melalui terimaBarang() dan keluarkanBarang().');
 
-  // Contoh: baris berikut akan error jika di-uncomment
-   // gudangUtama._stok = -10; // ERROR: _stok bersifat privat
-
+ 
   print('\n${'=' * 60}');
   print('  PENGUJIAN SELESAI');
   print('=' * 60);
