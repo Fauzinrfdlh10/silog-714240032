@@ -31,8 +31,11 @@ class KartuPengiriman extends StatelessWidget {
     final kotaAsal = pengiriman.asal?.kota ?? 'Gudang pusat';
 
     return Card(
+      color: const Color(0xFFF1F5EB),
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       clipBehavior: Clip.antiAlias,
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         onTap: onTap,
         child: Padding(

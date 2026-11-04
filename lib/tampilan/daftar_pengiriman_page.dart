@@ -4,6 +4,7 @@ import '../data/data_contoh.dart';
 import '../model/pengiriman.dart';
 import '../widget/kartu_pengiriman.dart';
 import 'detail_pengiriman_page.dart';
+import 'form_pengiriman_page.dart';
 
 class DaftarPengirimanPage extends StatefulWidget {
   const DaftarPengirimanPage({super.key});
@@ -12,162 +13,114 @@ class DaftarPengirimanPage extends StatefulWidget {
   State<DaftarPengirimanPage> createState() => _DaftarPengirimanPageState();
 }
 
-class _DaftarPengirimanPageState extends State<DaftarPengirimanPage>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
-
-  static const _labelTab = ['Semua', 'Dalam Perjalanan', 'Diterima'];
+class _DaftarPengirimanPageState extends State<DaftarPengirimanPage> {
+  late List<Pengiriman> _daftar;
+  String _filterStatus = 'Semua';
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: _labelTab.length, vsync: this);
+    _daftar = List<Pengiriman>.from(dataPengirimanContoh);
   }
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
+  List<Pengiriman> get _hasilSaring => _filterStatus == 'Semua'
+      ? _daftar
+      : _daftar.where((p) => p.status == _statusModel).toList();
 
-  List<Pengiriman> _pengirimanUntukTab(int index) {
-    if (index == 0) {
-      return dataPengirimanContoh;
-    }
+  String get _statusModel => switch (_filterStatus) {
+    'Menunggu Pickup' => 'Menunggu',
+    'Diterima' => 'Terkirim',
+    _ => _filterStatus,
+  };
 
-    final status = index == 1 ? 'Dalam Perjalanan' : 'Terkirim';
-    return dataPengirimanContoh
-        .where((pengiriman) => pengiriman.status == status)
-        .toList();
-  }
-
-  double get _totalNilaiBarang => dataPengirimanContoh.fold(
-    0,
-    (total, pengiriman) =>
-        total + (pengiriman.barang?.hargaSatuan ?? 0) * pengiriman.jumlah,
-  );
-
-  String _formatRupiah(double nilai) {
-    final angka = nilai.round().toString();
-    final berkelompok = angka.replaceAllMapped(
-      RegExp(r'\B(?=(\d{3})+(?!\d))'),
-      (_) => '.',
-    );
-    return 'Rp$berkelompok';
-  }
-
-  void _bukaDetail(BuildContext context, Pengiriman pengiriman) {
-    Navigator.push(
+  Future<void> _bukaFormulir() async {
+    final hasil = await Navigator.push<Pengiriman>(
       context,
-      MaterialPageRoute<void>(
-        builder: (context) => DetailPengirimanPage(pengiriman: pengiriman),
+      MaterialPageRoute(
+        builder: (_) => FormPengirimanPage(
+          resiTerdaftar: _daftar.map((pengiriman) => pengiriman.resi).toList(),
+        ),
       ),
     );
+
+    if (hasil != null) {
+      setState(() => _daftar.insert(0, hasil));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Pengiriman ${hasil.resi} berhasil ditambahkan'),
+        ),
+      );
+    }
+  }
+
+  Future<void> _bukaDetail(Pengiriman pengiriman) async {
+    final dihapus = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => DetailPengirimanPage(pengiriman: pengiriman),
+      ),
+    );
+
+    if (dihapus == true && mounted) {
+      setState(() => _daftar.remove(pengiriman));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Pengiriman ${pengiriman.resi} dihapus')),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final tema = Theme.of(context);
+    const opsi = ['Semua', 'Menunggu Pickup', 'Dalam Perjalanan', 'Diterima'];
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Daftar Pengiriman'),
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          tabs: [for (final label in _labelTab) Tab(text: label)],
-        ),
-      ),
+      appBar: AppBar(title: const Text('Daftar Pengiriman')),
       body: Column(
         children: [
-          Card(
-            margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Center(
               child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Jumlah pengiriman',
-                          style: tema.textTheme.bodyMedium?.copyWith(
-                            color: tema.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${dataPengirimanContoh.length} pengiriman',
-                          style: tema.textTheme.titleLarge,
-                        ),
-                      ],
+                mainAxisSize: MainAxisSize.min,
+                children: opsi.map((o) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ChoiceChip(
+                      label: Text(o),
+                      selected: _filterStatus == o,
+                      onSelected: (_) => setState(() => _filterStatus = o),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          'Total nilai barang',
-                          textAlign: TextAlign.end,
-                          style: tema.textTheme.bodyMedium?.copyWith(
-                            color: tema.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _formatRupiah(_totalNilaiBarang),
-                          textAlign: TextAlign.end,
-                          style: tema.textTheme.titleLarge,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                  );
+                }).toList(),
               ),
             ),
           ),
+          Text(
+            'Menampilkan ${_hasilSaring.length} dari ${_daftar.length} data',
+          ),
           Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                for (var index = 0; index < _labelTab.length; index++)
-                  _DaftarTab(
-                    pengiriman: _pengirimanUntukTab(index),
-                    onTap: (pengiriman) => _bukaDetail(context, pengiriman),
+            child: _hasilSaring.isEmpty
+                ? const Center(child: Text('Tidak ada data pengiriman'))
+                : ListView.builder(
+                    itemCount: _hasilSaring.length,
+                    itemBuilder: (context, i) {
+                      final item = _hasilSaring[i];
+                      return KartuPengiriman(
+                        pengiriman: item,
+                        onTap: () => _bukaDetail(item),
+                      );
+                    },
                   ),
-              ],
-            ),
           ),
         ],
       ),
-    );
-  }
-}
-
-class _DaftarTab extends StatelessWidget {
-  const _DaftarTab({required this.pengiriman, required this.onTap});
-
-  final List<Pengiriman> pengiriman;
-  final ValueChanged<Pengiriman> onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    if (pengiriman.isEmpty) {
-      return const Center(
-        child: Text('Tidak ada pengiriman pada kategori ini.'),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.only(top: 8, bottom: 20),
-      itemCount: pengiriman.length,
-      itemBuilder: (context, index) {
-        final item = pengiriman[index];
-        return KartuPengiriman(pengiriman: item, onTap: () => onTap(item));
-      },
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _bukaFormulir,
+        icon: const Icon(Icons.add),
+        label: const Text('Pengiriman Baru'),
+      ),
     );
   }
 }

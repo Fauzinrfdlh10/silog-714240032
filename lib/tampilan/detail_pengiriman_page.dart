@@ -7,14 +7,6 @@ class DetailPengirimanPage extends StatelessWidget {
 
   final Pengiriman pengiriman;
 
-  static const _urutanStatus = [
-    'Menunggu',
-    'Diproses',
-    'Dikirim',
-    'Dalam Perjalanan',
-    'Terkirim',
-  ];
-  
   String _formatTanggal(DateTime tanggal) {
     const namaBulan = [
       'Januari',
@@ -33,120 +25,119 @@ class DetailPengirimanPage extends StatelessWidget {
     return '${tanggal.day} ${namaBulan[tanggal.month - 1]} ${tanggal.year}';
   }
 
+  Future<void> _konfirmasiHapus(BuildContext context) async {
+    final konfirmasi = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hapus pengiriman?'),
+        content: Text(
+          'Pengiriman ${pengiriman.resi} akan dihapus dari daftar.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+
+    if (konfirmasi == true && context.mounted) {
+      Navigator.pop(context, true);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final tema = Theme.of(context);
-    final statusAktif = _urutanStatus.indexOf(pengiriman.status);
     final barang = pengiriman.barang;
-    final asal = pengiriman.asal;
+    final beratSatuan = barang?.beratKg ?? 0;
+    final totalBerat = beratSatuan * pengiriman.jumlah;
+    final totalNilai = (barang?.hargaSatuan ?? 0) * pengiriman.jumlah;
     final pelanggan = pengiriman.pelanggan;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Detail Pengiriman')),
+      appBar: AppBar(title: Text(pengiriman.resi)),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(18),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Nomor resi',
-                      style: tema.textTheme.bodyMedium?.copyWith(
-                        color: tema.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(pengiriman.resi, style: tema.textTheme.headlineSmall),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _InfoTujuan(
-                            label: 'Dari',
-                            nilai: asal?.kota ?? 'Gudang pusat',
-                            icon: Icons.warehouse_outlined,
-                          ),
-                        ),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 12),
-                          child: Icon(Icons.arrow_forward),
-                        ),
-                        Expanded(
-                          child: _InfoTujuan(
-                            label: 'Tujuan',
-                            nilai: pengiriman.kotaTujuan,
-                            icon: Icons.location_on_outlined,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+            Text('Informasi Pengiriman', style: _judulBagian(context)),
+            const Divider(height: 20),
+            _BarisDetail(label: 'Nomor Resi', nilai: pengiriman.resi),
+            _BarisDetail(label: 'Status', nilai: pengiriman.status),
+            _BarisDetail(
+              label: 'Gudang Asal',
+              nilai: pengiriman.asal?.nama ?? 'Gudang pusat',
+            ),
+            _BarisDetail(label: 'Kota Tujuan', nilai: pengiriman.kotaTujuan),
+            _BarisDetail(
+              label: 'Penerima',
+              nilai: pelanggan?.nama ?? 'Data penerima belum tersedia',
+            ),
+            if (pelanggan != null)
+              _BarisDetail(label: 'Alamat Penerima', nilai: pelanggan.alamat),
+            _BarisDetail(
+              label: 'Tanggal Kirim',
+              nilai: _formatTanggal(pengiriman.tanggal),
+            ),
+            const SizedBox(height: 20),
+            Text('Rincian Barang', style: _judulBagian(context)),
+            const Divider(height: 20),
+            _BarisDetail(label: 'Kode Barang', nilai: barang?.kode ?? '-'),
+            _BarisDetail(
+              label: 'Nama Barang',
+              nilai: barang?.nama ?? 'Barang logistik',
+            ),
+            _BarisDetail(
+              label: 'Jumlah',
+              nilai: '${pengiriman.jumlah} ${barang?.satuan ?? 'pcs'}',
+            ),
+            _BarisDetail(
+              label: 'Berat Barang',
+              nilai: '${beratSatuan.toStringAsFixed(1)} kg / satuan',
+            ),
+            _BarisDetail(
+              label: 'Total Berat',
+              nilai: '${totalBerat.toStringAsFixed(1)} kg',
+            ),
+            _BarisDetail(
+              label: 'Nilai Barang',
+              nilai: 'Rp${totalNilai.toStringAsFixed(0)}',
+            ),
+            const SizedBox(height: 28),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () => Navigator.pop(context, false),
+                icon: const Icon(Icons.arrow_back),
+                label: const Text('Kembali ke Daftar'),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(44),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(28),
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 20),
-            Text('Informasi barang', style: tema.textTheme.titleLarge),
             const SizedBox(height: 8),
-            Card(
-              child: Column(
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.inventory_2_outlined),
-                    title: Text(barang?.nama ?? 'Barang logistik'),
-                    subtitle: Text('Jumlah: ${pengiriman.jumlah}'),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _konfirmasiHapus(context),
+                icon: const Icon(Icons.delete_outline),
+                label: const Text('Hapus Pengiriman'),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(44),
+                  foregroundColor: Theme.of(context).colorScheme.error,
+                  side: BorderSide(color: Theme.of(context).colorScheme.error),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(28),
                   ),
-                  if (barang != null)
-                    ListTile(
-                      leading: const Icon(Icons.sell_outlined),
-                      title: Text('Kode ${barang.kode}'),
-                      subtitle: Text(
-                        'Harga satuan: Rp${barang.hargaSatuan.toStringAsFixed(0)}',
-                      ),
-                    ),
-                  ListTile(
-                    leading: const Icon(Icons.calendar_today_outlined),
-                    title: const Text('Tanggal pengiriman'),
-                    subtitle: Text(_formatTanggal(pengiriman.tanggal)),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text('Penerima', style: tema.textTheme.titleLarge),
-            const SizedBox(height: 8),
-            Card(
-              child: ListTile(
-                leading: const CircleAvatar(child: Icon(Icons.person_outline)),
-                title: Text(pelanggan?.nama ?? 'Data penerima belum tersedia'),
-                subtitle: Text(
-                  [
-                    if (pelanggan != null) pelanggan.alamat,
-                    if (pelanggan != null) pelanggan.telepon,
-                  ].join('\n'),
-                ),
-                isThreeLine: pelanggan != null,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text('Status pengiriman', style: tema.textTheme.titleLarge),
-            const SizedBox(height: 8),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    for (var index = 0; index < _urutanStatus.length; index++)
-                      _StatusItem(
-                        label: _urutanStatus[index],
-                        aktif: statusAktif >= index,
-                        terakhir: index == _urutanStatus.length - 1,
-                      ),
-                  ],
                 ),
               ),
             ),
@@ -155,85 +146,37 @@ class DetailPengirimanPage extends StatelessWidget {
       ),
     );
   }
+
+  TextStyle? _judulBagian(BuildContext context) =>
+      Theme.of(context).textTheme.titleMedium
+          ?.copyWith(fontWeight: FontWeight.w600);
 }
 
-class _InfoTujuan extends StatelessWidget {
-  const _InfoTujuan({
-    required this.label,
-    required this.nilai,
-    required this.icon,
-  });
+class _BarisDetail extends StatelessWidget {
+  const _BarisDetail({required this.label, required this.nilai});
 
   final String label;
   final String nilai;
-  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, color: Theme.of(context).colorScheme.primary),
-        const SizedBox(height: 6),
-        Text(label, style: Theme.of(context).textTheme.bodySmall),
-        Text(
-          nilai,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-      ],
-    );
-  }
-}
-
-class _StatusItem extends StatelessWidget {
-  const _StatusItem({
-    required this.label,
-    required this.aktif,
-    required this.terakhir,
-  });
-
-  final String label;
-  final bool aktif;
-  final bool terakhir;
-
-  @override
-  Widget build(BuildContext context) {
-    final warna = aktif
-        ? Theme.of(context).colorScheme.primary
-        : Theme.of(context).colorScheme.outlineVariant;
-
-    return IntrinsicHeight(
+    final style = Theme.of(context).textTheme.bodyMedium;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 24,
-            child: Column(
-              children: [
-                Icon(
-                  aktif ? Icons.check_circle : Icons.radio_button_unchecked,
-                  size: 20,
-                  color: warna,
-                ),
-                if (!terakhir)
-                  Expanded(child: Container(width: 2, color: warna)),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Padding(
-            padding: const EdgeInsets.only(bottom: 18),
+            width: 140,
             child: Text(
               label,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: aktif
-                    ? Theme.of(context).colorScheme.onSurface
-                    : Theme.of(context).colorScheme.onSurfaceVariant,
-                fontWeight: aktif ? FontWeight.w600 : FontWeight.normal,
+              style: style?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ),
+          const Text(': '),
+          Expanded(child: Text(nilai, style: style)),
         ],
       ),
     );
