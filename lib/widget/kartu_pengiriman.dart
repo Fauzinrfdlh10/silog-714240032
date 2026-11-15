@@ -13,25 +13,27 @@ class KartuPengiriman extends StatelessWidget {
   final VoidCallback onTap;
 
   Color _warnaStatus(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     switch (pengiriman.status) {
       case 'Terkirim':
-        return Colors.green;
+        return colorScheme.tertiary;
       case 'Dalam Perjalanan':
-        return Colors.orange;
+        return colorScheme.secondary;
       default:
-        return Theme.of(context).colorScheme.primary;
+        return colorScheme.primary;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final warnaStatus = _warnaStatus(context);
     final teks = Theme.of(context).textTheme;
     final namaBarang = pengiriman.barang?.nama ?? 'Barang logistik';
     final kotaAsal = pengiriman.asal?.kota ?? 'Gudang pusat';
 
     return Card(
-      color: const Color(0xFFF1F5EB),
+      color: colorScheme.surfaceContainerLow,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       clipBehavior: Clip.antiAlias,
       elevation: 1,

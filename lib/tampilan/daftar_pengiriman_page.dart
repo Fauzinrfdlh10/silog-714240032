@@ -5,9 +5,17 @@ import '../model/pengiriman.dart';
 import '../widget/kartu_pengiriman.dart';
 import 'detail_pengiriman_page.dart';
 import 'form_pengiriman_page.dart';
+import 'stok_page.dart';
 
 class DaftarPengirimanPage extends StatefulWidget {
-  const DaftarPengirimanPage({super.key});
+  const DaftarPengirimanPage({
+    this.modeGelap = false,
+    this.onUbahModeGelap,
+    super.key,
+  });
+
+  final bool modeGelap;
+  final VoidCallback? onUbahModeGelap;
 
   @override
   State<DaftarPengirimanPage> createState() => _DaftarPengirimanPageState();
@@ -75,7 +83,26 @@ class _DaftarPengirimanPageState extends State<DaftarPengirimanPage> {
     const opsi = ['Semua', 'Menunggu Pickup', 'Dalam Perjalanan', 'Diterima'];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Daftar Pengiriman')),
+      appBar: AppBar(
+        title: const Text('Daftar Pengiriman'),
+        actions: [
+          IconButton(
+            tooltip: widget.modeGelap ? 'Mode terang' : 'Mode gelap',
+            icon: Icon(widget.modeGelap ? Icons.light_mode : Icons.dark_mode),
+            onPressed: widget.onUbahModeGelap,
+          ),
+          IconButton(
+            tooltip: 'Stok Gudang',
+            icon: const Icon(Icons.inventory_2_outlined),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const StokPage()),
+              );
+            },
+          ),
+        ],
+      ),
       body: Column(
         children: [
           SingleChildScrollView(
